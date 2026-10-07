@@ -6,9 +6,18 @@ import EmptyState from '@/components/EmptyState';
 import LocalTime from '@/components/LocalTime';
 import styles from './page.module.css';
 
+const AI_PROVIDERS = [
+  { id: 'none', label: 'None' },
+  { id: 'claude', label: 'Claude (Anthropic)', placeholder: 'sk-ant-...', models: ['claude-sonnet-4-20250514', 'claude-haiku-4-5-20251001'] },
+  { id: 'openai', label: 'ChatGPT (OpenAI)', placeholder: 'sk-...', models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'] },
+  { id: 'gemini', label: 'Gemini (Google)', placeholder: 'AIza...', models: ['gemini-pro', 'gemini-1.5-flash'] },
+];
+
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [ai, setAi] = useState({ provider: 'none', model: '', apiKey: '', configured: false, keyMasked: null });
+  const [aiSaving, setAiSaving] = useState(false);
   const searchParams = useSearchParams();
   const addToast = useToast();
 
@@ -24,6 +33,7 @@ export default function AccountsPage() {
 
     if (searchParams.get('connected')) addToast('success', 'LinkedIn account connected!');
     if (searchParams.get('error')) addToast('error', 'Failed to connect LinkedIn.');
+    fetch('/api/ai').then((r) => r.json()).then((d) => setAi({ ...d, apiKey: '' })).catch(() => {});
   }, []);
 
   const getTokenStatus = (expiresAt) => {
@@ -99,7 +109,79 @@ export default function AccountsPage() {
         </div>
       )}
 
-      {/* How it works */}
+      {/* AI Integration */}
+      <div className={styles.guide}>
+        <h2 className={styles.guideTitle}>AI content assistant</h2>
+        <p className={styles.guideSub}>Connect your AI API key to generate and improve post content directly in the editor.</p>
+
+        <div className="card" style={{ padding: 24 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div>
+              <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-muted)', display: 'block', marginBottom: 6 }}>AI Provider</label>
+              <select value={ai.provider} onChange={(e) => setAi({ ...ai, provider: e.target.value, model: '', apiKey: '' })} style={{ padding: '8px 12px', border: '1.5px solid var(--border)', borderRadius: 8, fontSize: 14, width: 280, fontFamily: 'var(--sans)' }}>
+                {AI_PROVIDERS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+              </select>
+            </div>
+
+            {ai.provider !== 'none' && (
+              <>
+                <div>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-muted)', display: 'block', marginBottom: 6 }}>API Key</label>
+                  <input
+                    value={ai.apiKey}
+                    onChange={(e) => setAi({ ...ai, apiKey: e.target.value })}
+                    placeholder={ai.keyMasked || AI_PROVIDERS.find((p) => p.id === ai.provider)?.placeholder || 'Enter API key'}
+                    type="text"
+                    autoComplete="off"
+                    style={{ padding: '8px 12px', border: '1.5px solid var(--border)', borderRadius: 8, fontSize: 13, width: '100%', fontFamily: 'monospace' }}
+                  />
+                  <p style={{ fontSize: 12, color: 'var(--ink-faint)', marginTop: 4 }}>
+                    Your key is encrypted and stored securely. It's only used to call the AI API on your behalf.
+                    {ai.provider === 'claude' && <> Get yours at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue)', textDecoration: 'underline' }}>console.anthropic.com</a></>}
+                    {ai.provider === 'openai' && <> Get yours at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue)', textDecoration: 'underline' }}>platform.openai.com</a></>}
+                    {ai.provider === 'gemini' && <> Get yours at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue)', textDecoration: 'underline' }}>aistudio.google.com</a></>}
+                  </p>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-muted)', display: 'block', marginBottom: 6 }}>Model</label>
+                  <select value={ai.model} onChange={(e) => setAi({ ...ai, model: e.target.value })} style={{ padding: '8px 12px', border: '1.5px solid var(--border)', borderRadius: 8, fontSize: 14, width: 280, fontFamily: 'var(--sans)' }}>
+                    <option value="">Default</option>
+                    {AI_PROVIDERS.find((p) => p.id === ai.provider)?.models?.map((m) => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+              </>
+            )}
+
+            <button
+              className="btn btn-primary btn-sm"
+              disabled={aiSaving}
+              onClick={async () => {
+                setAiSaving(true);
+                try {
+                  const res = await fetch('/api/ai', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider: ai.provider, apiKey: ai.apiKey, model: ai.model }),
+                  });
+                  const json = await res.json();
+                  if (!json.success) throw new Error(json.error);
+                  addToast('success', ai.provider === 'none' ? 'AI disconnected.' : 'AI settings saved!');
+                  // Refresh
+                  const fresh = await fetch('/api/ai').then((r) => r.json());
+                  setAi({ ...fresh, apiKey: '' });
+                } catch (err) { addToast('error', err.message); }
+                setAiSaving(false);
+              }}
+              style={{ alignSelf: 'flex-start' }}
+            >
+              {aiSaving ? 'Saving...' : 'Save AI settings'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* How to configure */}
       <div className={styles.guide}>
         <h2 className={styles.guideTitle}>How it works</h2>
         <p className={styles.guideSub}>A simple guide to scheduling and publishing your LinkedIn posts.</p>

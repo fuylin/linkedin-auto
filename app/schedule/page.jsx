@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ToastProvider';
 import TemplatePicker from '@/components/TemplatePicker';
 import PostPreview from '@/components/PostPreview';
+import AIToolbar from '@/components/AIToolbar';
 import styles from './page.module.css';
 
 export default function SchedulePost() {
@@ -132,6 +133,16 @@ export default function SchedulePost() {
                 </div>
                 <span className={styles.charText}>{form.commentary.length} / 3000</span>
               </div>
+              <AIToolbar
+                text={form.commentary}
+                onResult={(result, error) => {
+                  if (error) addToast('error', error);
+                  else if (result) setForm({ ...form, commentary: result });
+                }}
+                onHashtags={(tags) => {
+                  setForm({ ...form, commentary: form.commentary.trim() + '\n\n' + tags });
+                }}
+              />
             </div>
 
             <div className="form-group">
