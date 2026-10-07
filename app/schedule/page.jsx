@@ -15,6 +15,7 @@ export default function SchedulePost() {
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [accountsLoaded, setAccountsLoaded] = useState(false);
   const [bestTimes, setBestTimes] = useState([]);
 
   useEffect(() => {
@@ -24,8 +25,8 @@ export default function SchedulePost() {
         if (!r.ok) throw new Error(data.error || 'Unable to load accounts');
         return data;
       })
-      .then(setAccounts)
-      .catch((err) => addToast('error', err.message));
+      .then((data) => { setAccounts(data); setAccountsLoaded(true); })
+      .catch((err) => { addToast('error', err.message); setAccountsLoaded(true); });
     fetch('/api/analytics/best-times')
       .then((r) => r.json())
       .then((data) => { if (data.slots?.length) setBestTimes(data.slots); })
@@ -82,7 +83,7 @@ export default function SchedulePost() {
         <p>Write your content, optionally attach an image, and schedule it.</p>
       </div>
 
-      {accounts.length === 0 && (
+      {accountsLoaded && accounts.length === 0 && (
         <div className="alert alert-error">
           No LinkedIn account connected.{' '}
           <a href="/accounts" style={{ textDecoration: 'underline', fontWeight: 600 }}>Connect one →</a>
@@ -135,12 +136,17 @@ export default function SchedulePost() {
               </div>
               <AIToolbar
                 text={form.commentary}
-                onResult={(result, error) => {
-                  if (error) addToast('error', error);
-                  else if (result) setForm({ ...form, commentary: result });
+                onResult={(result, error, hooks) => {
+                  if (error) { addToast('error', error); return; }
+                  if (hooks) {
+                    // Show hooks as info toast — user can copy what they like
+                    addToast('info', 'Hook suggestions:\n' + hooks);
+                    return;
+                  }
+                  if (result) setForm((prev) => ({ ...prev, commentary: result }));
                 }}
                 onHashtags={(tags) => {
-                  setForm({ ...form, commentary: form.commentary.trim() + '\n\n' + tags });
+                  setForm((prev) => ({ ...prev, commentary: prev.commentary.trim() + '\n\n' + tags }));
                 }}
               />
             </div>

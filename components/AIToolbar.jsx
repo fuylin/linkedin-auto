@@ -46,10 +46,15 @@ export default function AIToolbar({ text, onResult, onHashtags }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
+      if (!data.result || !data.result.trim()) {
+        onResult(null, 'AI returned an empty response. Try again.');
+        return;
+      }
       if (action === 'hashtags' && onHashtags) {
         onHashtags(data.result);
       } else if (action === 'hook') {
-        onResult(data.result);
+        // Hooks: append below current text instead of replacing
+        onResult(null, null, data.result); // pass as hooks
       } else {
         onResult(data.result);
       }

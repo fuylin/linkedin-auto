@@ -216,11 +216,11 @@ export default function AnalyticsPage() {
           </div>
         )}
 
-        {posts.some((p) => p.analytics?.fetchedAt) && (
-          <p className={styles.lastRefreshed}>
-            Last refreshed: <LocalTime date={new Date(Math.max(...posts.filter((p) => p.analytics?.fetchedAt).map((p) => new Date(p.analytics.fetchedAt).getTime())))} />
-          </p>
-        )}
+        {posts.some((p) => p.analytics?.fetchedAt) && (() => {
+          const times = posts.filter((p) => p.analytics?.fetchedAt).map((p) => new Date(p.analytics.fetchedAt).getTime());
+          const latest = times.length > 0 ? new Date(Math.max(...times)) : null;
+          return latest ? <p className={styles.lastRefreshed}>Last refreshed: <LocalTime date={latest} /></p> : null;
+        })()}
       </div>
     </div>
   );

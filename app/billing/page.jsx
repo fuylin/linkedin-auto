@@ -23,10 +23,17 @@ export default function BillingPage() {
   if (loading) return <div><div className="page-header"><h1>Billing</h1></div><p style={{ color: 'var(--text-muted)' }}>Loading...</p></div>;
   if (!data) return <div><div className="page-header"><h1>Billing</h1></div><p>Failed to load.</p></div>;
 
-  const { billingMode, subscription, usage, limits, plans, payments, currency } = data;
-  const currentPlan = subscription?.plan;
+  const billingMode = data.billingMode || 'free';
+  const subscription = data.subscription || null;
+  const usage = data.usage || {};
+  const limits = data.limits || null;
+  const plans = data.plans || [];
+  const payments = data.payments || [];
+  const currency = data.currency || 'INR';
+  const currentPlan = subscription?.plan || null;
   const isFreeMode = billingMode === 'free';
-  const formatPrice = (p) => `₹${(p / 100).toLocaleString()}`;
+  const currencySymbol = currency === 'INR' ? '₹' : currency === 'USD' ? '$' : currency;
+  const formatPrice = (p) => `${currencySymbol}${(p / 100).toLocaleString()}`;
 
   return (
     <div>

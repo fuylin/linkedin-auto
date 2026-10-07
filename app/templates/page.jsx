@@ -159,7 +159,7 @@ export default function TemplatesPage() {
               </div>
               <p className={styles.content}>{t.content}</p>
               <div className={styles.cardBottom}>
-                <span className={styles.usage}>Used {t.usageCount}x</span>
+                <span className={styles.usage}>Used {t.usageCount || 0}x</span>
                 <div className={styles.cardActions}>
                   <button className="btn btn-ghost btn-sm" onClick={() => startEdit(t)}>Edit</button>
                   <button className="btn btn-ghost btn-sm" style={{ color: 'var(--red)' }} onClick={() => remove(t._id)}>Delete</button>
