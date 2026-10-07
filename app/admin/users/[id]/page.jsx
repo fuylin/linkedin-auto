@@ -9,8 +9,11 @@ export default function UserDetailPage() {
   const userId = params.id;
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [plans, setPlans] = useState([]);
+  const [actionMsg, setActionMsg] = useState('');
+  const [acting, setActing] = useState(false);
 
-  useEffect(() => {
+  const loadData = () => {
     fetch(`/api/admin/users?userId=${userId}`)
       .then(async (r) => {
         if (r.status === 401) { router.replace('/admin'); return; }
@@ -19,7 +22,33 @@ export default function UserDetailPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadData();
+    fetch('/api/admin/plans').then((r) => r.json()).then((d) => { if (d.success) setPlans(d.plans || []); }).catch(() => {});
   }, [userId]);
+
+  const manage = async (action, extra = {}) => {
+    if (action === 'delete' && !confirm('DELETE this user and ALL their data? This cannot be undone.')) return;
+    if (action === 'suspend' && !confirm('Suspend this user? They will be blocked from using the platform.')) return;
+    setActing(true);
+    setActionMsg('');
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/manage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, ...extra }),
+      });
+      const json = await res.json();
+      setActionMsg(json.success ? json.message : json.error);
+      if (json.success && action === 'delete') { router.replace('/admin/dashboard'); return; }
+      loadData();
+    } catch { setActionMsg('Failed'); }
+    setActing(false);
+    setTimeout(() => setActionMsg(''), 4000);
+  };
+
 
   function fmt(d) {
     if (!d) return '--';
@@ -253,6 +282,50 @@ export default function UserDetailPage() {
               </tbody>
             </table>
           ) : <p className={styles.muted}>No posts yet</p>}
+        </div>
+
+        {/* ── User management ── */}
+        <div className={styles.detailCard} style={{ marginTop: 16, borderLeft: '4px solid var(--red)' }}>
+          <h3 className={styles.cardTitle}>Manage user</h3>
+
+          {actionMsg && <div style={{ padding: '8px 12px', background: '#D1FAE5', color: '#065F46', borderRadius: 8, marginBottom: 12, fontSize: 13, fontWeight: 600 }}>{actionMsg}</div>}
+
+          {/* Change plan */}
+          {plans.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-muted)', display: 'block', marginBottom: 6 }}>Change plan</label>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <select id="planSelect" defaultValue="" style={{ padding: '8px 12px', border: '1.5px solid var(--border)', borderRadius: 8, fontSize: 14, fontFamily: 'var(--sans)', minWidth: 200 }}>
+                  <option value="" disabled>Select plan...</option>
+                  {plans.map((p) => <option key={p.slug} value={p.slug}>{p.name} {p.priceMonthly > 0 ? `(₹${p.priceMonthly / 100}/mo)` : '(Free)'}</option>)}
+                </select>
+                <button className="btn btn-primary btn-sm" disabled={acting} onClick={() => {
+                  const slug = document.getElementById('planSelect').value;
+                  if (slug) manage('change_plan', { planSlug: slug });
+                }}>Assign plan</button>
+                <button className="btn btn-ghost btn-sm" disabled={acting} onClick={() => manage('remove_plan')}>Remove plan (free)</button>
+              </div>
+            </div>
+          )}
+
+          {/* Suspend / Unsuspend */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+            {primary?.status === 'SUSPENDED' ? (
+              <button className="btn btn-outline btn-sm" disabled={acting} onClick={() => manage('unsuspend')} style={{ color: 'var(--green)', borderColor: 'var(--green)' }}>
+                Reactivate user
+              </button>
+            ) : (
+              <button className="btn btn-outline btn-sm" disabled={acting} onClick={() => manage('suspend', { reason: prompt('Suspension reason (optional):') || '' })} style={{ color: 'var(--orange)', borderColor: 'var(--orange)' }}>
+                Suspend user
+              </button>
+            )}
+            <button className="btn btn-danger btn-sm" disabled={acting} onClick={() => manage('delete')}>
+              Delete user & all data
+            </button>
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>
+            Suspend blocks the user from accessing the platform. Delete permanently removes all their posts, templates, and activity data.
+          </p>
         </div>
       </div>
     </main>

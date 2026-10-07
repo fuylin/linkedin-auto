@@ -6,7 +6,62 @@ import styles from './page.module.css';
 export default function BillingPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [upgrading, setUpgrading] = useState(false);
   const addToast = useToast();
+
+  const handleUpgrade = async (planSlug) => {
+    setUpgrading(true);
+    try {
+      const res = await fetch('/api/billing/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planSlug, billingCycle: 'monthly' }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+
+      // Load Cashfree checkout SDK and open payment
+      const env = json.environment === 'production' ? 'production' : 'sandbox';
+      const sdkUrl = env === 'production'
+        ? 'https://sdk.cashfree.com/js/v3/cashfree.js'
+        : 'https://sdk.cashfree.com/js/v3/cashfree-sandbox.js';
+
+      // Load SDK script if not already loaded
+      if (!window.Cashfree) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = sdkUrl;
+          script.onload = resolve;
+          script.onerror = () => reject(new Error('Failed to load Cashfree SDK'));
+          document.head.appendChild(script);
+        });
+      }
+
+      const cashfree = window.Cashfree({ mode: env });
+      const result = await cashfree.checkout({ paymentSessionId: json.paymentSessionId });
+
+      if (result.error) {
+        addToast('error', result.error.message || 'Payment failed');
+      } else if (result.paymentDetails) {
+        // Verify payment
+        const verifyRes = await fetch('/api/billing/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: json.orderId }),
+        });
+        const verifyJson = await verifyRes.json();
+        if (verifyJson.success) {
+          addToast('success', 'Payment successful! Plan upgraded.');
+          window.location.reload();
+        } else {
+          addToast('error', verifyJson.error || 'Payment verification failed');
+        }
+      }
+    } catch (err) {
+      addToast('error', err.message);
+    }
+    setUpgrading(false);
+  };
 
   useEffect(() => {
     fetch('/api/billing')
@@ -116,9 +171,17 @@ export default function BillingPage() {
                       </ul>
                       {isCurrent ? (
                         <button className="btn btn-outline" disabled style={{ width: '100%', marginTop: 16 }}>Current plan</button>
+                      ) : plan.priceMonthly === 0 ? (
+                        <button className="btn btn-outline" style={{ width: '100%', marginTop: 16 }} onClick={() => addToast('info', 'Contact admin to switch to the free plan.')}>
+                          Switch to Free
+                        </button>
+                      ) : !data.cashfreeConfigured ? (
+                        <button className="btn btn-outline" style={{ width: '100%', marginTop: 16 }} onClick={() => addToast('info', 'Payments are not configured. Contact admin to upgrade.')}>
+                          Contact admin
+                        </button>
                       ) : (
-                        <button className="btn btn-primary" style={{ width: '100%', marginTop: 16 }} onClick={() => addToast('info', data.cashfreeConfigured ? 'Checkout coming soon' : 'Contact admin to upgrade')}>
-                          {plan.priceMonthly > 0 ? 'Upgrade' : 'Downgrade'}
+                        <button className="btn btn-primary" style={{ width: '100%', marginTop: 16 }} disabled={upgrading} onClick={() => handleUpgrade(plan.slug)}>
+                          {upgrading ? 'Processing...' : `Upgrade to ${plan.name}`}
                         </button>
                       )}
                     </div>

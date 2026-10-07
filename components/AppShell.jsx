@@ -61,6 +61,7 @@ function usePlatformStatus() {
       .then((data) => {
         if (data.status === 'PENDING') router.replace('/pending');
         if (data.status === 'REJECTED') router.replace('/sign-in?error=rejected');
+        if (data.status === 'SUSPENDED') router.replace('/sign-in?error=suspended');
       })
       .catch(() => {});
   }, [pathname]);

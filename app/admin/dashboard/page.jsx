@@ -95,6 +95,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
+            <a href="/admin/security" className="btn btn-ghost">Security</a>
             <a href="/admin/settings" className="btn btn-ghost">Settings</a>
             <button className="btn btn-ghost" onClick={fetchAll}>Refresh</button>
             <button className="btn btn-outline" onClick={handleLogout}>Logout</button>

@@ -42,6 +42,7 @@ export default function SignInPage() {
                error === 'invite_only' ? 'This platform is invite-only. You need an invite link to sign up.' :
                error === 'invite_invalid' ? 'Your invite link is invalid or expired. Contact the admin for a new one.' :
                error === 'rejected' ? 'Your account was not approved. Contact the admin for more information.' :
+               error === 'suspended' ? 'Your account has been suspended. Contact the admin.' :
                'Sign-in failed. Please try again.'}
             </div>
           )}
