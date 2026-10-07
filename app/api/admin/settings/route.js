@@ -19,6 +19,10 @@ export async function GET() {
       settings.smtpPasswordMasked = settings.smtpPassword.slice(0, 4) + '••••••••';
     }
     delete settings.smtpPassword;
+    if (settings.billing?.cashfreeSecretKey) {
+      settings.billing.cashfreeSecretKeyMasked = settings.billing.cashfreeSecretKey.slice(0, 4) + '••••••••';
+      delete settings.billing.cashfreeSecretKey;
+    }
     return NextResponse.json({ success: true, settings });
   } catch (error) {
     console.error('[ADMIN SETTINGS GET]', error);
@@ -44,15 +48,33 @@ export async function PUT(request) {
       'registrationMode', 'registrationEnabled', 'allowedEmailDomains',
       'sessionTimeoutDays', 'maxSessionsPerUser', 'ipBlacklist',
       'autoDeleteFailedDays', 'autoDeletePublishedDays', 'dataRetentionActivityDays',
+      'billing.mode', 'billing.cashfreeAppId', 'billing.cashfreeSecretKey',
+      'billing.cashfreeWebhookSecret', 'billing.cashfreeEnvironment',
+      'billing.currency', 'billing.freePostsPerMonth', 'billing.pricePerPost',
+      'billing.flatPrice', 'billing.flatPriceLabel', 'billing.trialDays',
     ];
 
     const update = {};
     for (const key of allowed) {
-      if (body[key] !== undefined) update[key] = body[key];
+      // Handle nested keys like billing.mode
+      if (key.includes('.')) {
+        const [parent, child] = key.split('.');
+        if (body[parent] && body[parent][child] !== undefined) {
+          update[key] = body[parent][child];
+        }
+      } else if (body[key] !== undefined) {
+        update[key] = body[key];
+      }
     }
-    // Don't overwrite password with the masked version
+    // Don't overwrite passwords with masked versions
     if (update.smtpPassword && update.smtpPassword.includes('••••')) {
       delete update.smtpPassword;
+    }
+    if (update['billing.cashfreeSecretKey'] && (update['billing.cashfreeSecretKey'].includes('••••') || update['billing.cashfreeSecretKey'] === '')) {
+      delete update['billing.cashfreeSecretKey'];
+    }
+    if (update['billing.cashfreeWebhookSecret'] === '') {
+      delete update['billing.cashfreeWebhookSecret'];
     }
 
     const settings = await Settings.findByIdAndUpdate(
@@ -68,6 +90,10 @@ export async function PUT(request) {
       settings.smtpPasswordMasked = settings.smtpPassword.slice(0, 4) + '••••••••';
     }
     delete settings.smtpPassword;
+    if (settings.billing?.cashfreeSecretKey) {
+      settings.billing.cashfreeSecretKeyMasked = settings.billing.cashfreeSecretKey.slice(0, 4) + '••••••••';
+      delete settings.billing.cashfreeSecretKey;
+    }
 
     return NextResponse.json({ success: true, settings, message: 'Settings saved.' });
   } catch (error) {

@@ -4,6 +4,7 @@ import Template from '@/lib/models/Template';
 import { publicError } from '@/lib/api';
 import { getOwnerId, unauthorized } from '@/lib/currentUser';
 import { trackActivity } from '@/lib/activity';
+import { checkLimit } from '@/lib/limits';
 
 export async function GET(request) {
   try {
@@ -21,6 +22,8 @@ export async function POST(request) {
   try {
     const ownerId = await getOwnerId(request);
     if (!ownerId) return unauthorized();
+    const limit = await checkLimit(ownerId, 'create_template');
+    if (!limit.allowed) return NextResponse.json({ error: limit.reason, upgrade: limit.upgrade }, { status: 403 });
     const body = await request.json();
     const { name, content, category } = body;
 

@@ -149,6 +149,34 @@ export async function GET(request) {
       console.warn('[AUTH] Could not fetch admin orgs:', orgError.message);
     }
 
+    // 3c. Auto-create subscription for new users
+    if (isNewUser) {
+      try {
+        const PlanModel = (await import('@/lib/models/Plan')).default;
+        const SubModel = (await import('@/lib/models/Subscription')).default;
+        const billingMode = platformSettings?.billing?.mode || 'free';
+        if (billingMode !== 'free') {
+          const defaultPlan = await PlanModel.findOne({ applicableModes: billingMode, isDefault: true, isActive: true });
+          if (defaultPlan) {
+            await SubModel.findOneAndUpdate(
+              { ownerId },
+              {
+                ownerId,
+                plan: defaultPlan._id,
+                planSlug: defaultPlan.slug,
+                status: defaultPlan.priceMonthly > 0 ? (platformSettings.billing.trialDays > 0 ? 'trialing' : 'free') : 'free',
+                trialEndsAt: platformSettings.billing.trialDays > 0 ? new Date(Date.now() + platformSettings.billing.trialDays * 86400000) : null,
+                'usage.usageCycleStart': new Date(),
+              },
+              { upsert: true, new: true }
+            );
+          }
+        }
+      } catch (subError) {
+        console.warn('[AUTH] Could not create subscription:', subError.message);
+      }
+    }
+
     // 4. Create session JWT and set it as a cookie
     const jwt = await createSession({
       userId: ownerId,

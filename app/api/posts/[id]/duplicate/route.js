@@ -4,6 +4,7 @@ import Post from '@/lib/models/Post';
 import { isObjectId, publicError } from '@/lib/api';
 import { getOwnerId, unauthorized } from '@/lib/currentUser';
 import { trackActivity } from '@/lib/activity';
+import { checkLimit } from '@/lib/limits';
 
 // POST /api/posts/:id/duplicate — creates a DRAFT copy of an existing post
 export async function POST(request, { params }) {
@@ -11,6 +12,8 @@ export async function POST(request, { params }) {
     const { id } = await params;
     const ownerId = await getOwnerId(request);
     if (!ownerId) return unauthorized();
+    const limit = await checkLimit(ownerId, 'create_post');
+    if (!limit.allowed) return NextResponse.json({ error: limit.reason, upgrade: limit.upgrade }, { status: 403 });
     if (!isObjectId(id)) return NextResponse.json({ error: 'Invalid post id' }, { status: 400 });
 
     await connectDB();

@@ -10,6 +10,7 @@ const TABS = [
   { id: 'scheduler', label: 'Scheduler', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
   { id: 'access', label: 'Access', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> },
   { id: 'data', label: 'Data', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg> },
+  { id: 'billing', label: 'Billing', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> },
 ];
 
 export default function AdminSettingsPage() {
@@ -424,6 +425,121 @@ export default function AdminSettingsPage() {
                   Download backup (JSON)
                 </a>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ═══ BILLING TAB ═══ */}
+        {tab === 'billing' && (
+          <div className={styles.section}>
+            <div className={`card ${styles.sectionCard}`}>
+              <div className={styles.sectionHeader}>
+                <div className={styles.sectionIconWrap} style={{ background: '#E0F2FE', color: '#0369A1' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                </div>
+                <div>
+                  <h2 className={styles.sectionTitle}>Billing & subscription</h2>
+                  <p className={styles.sectionDesc}>Choose how users are charged. Set to "Free" for no limits and no payments.</p>
+                </div>
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.fieldLabel}>Billing mode</label>
+                <select className={styles.input} value={settings.billing?.mode || 'free'} onChange={(e) => update('billing', { ...settings.billing, mode: e.target.value })} style={{ width: 320 }}>
+                  <option value="free">Free — no limits, no payments</option>
+                  <option value="free_pro">Free + Pro — free tier with limits, Pro unlocks everything</option>
+                  <option value="three_tier">Three tiers — Free / Pro / Business</option>
+                  <option value="usage">Usage-based — pay per post after free quota</option>
+                  <option value="flat">Flat subscription — everyone pays the same monthly amount</option>
+                </select>
+                <p className={styles.fieldHint}>
+                  {(settings.billing?.mode || 'free') === 'free' && 'Everyone gets full access. No payments, no limits. This is the default.'}
+                  {settings.billing?.mode === 'free_pro' && 'Create a Free plan (with limits) and a Pro plan (unlimited). Manage plans below.'}
+                  {settings.billing?.mode === 'three_tier' && 'Create Free, Pro, and Business plans with graduated limits. Manage plans below.'}
+                  {settings.billing?.mode === 'usage' && 'Users get a free monthly quota. Additional posts are charged individually.'}
+                  {settings.billing?.mode === 'flat' && 'All users pay the same monthly amount for full access.'}
+                </p>
+              </div>
+
+              {/* Usage-based settings */}
+              {settings.billing?.mode === 'usage' && (
+                <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16, marginTop: 8 }}>
+                  <div className={styles.field}>
+                    <label className={styles.fieldLabel}>Free posts per month</label>
+                    <input className={styles.inputSmall} type="number" value={settings.billing?.freePostsPerMonth || 10} onChange={(e) => update('billing', { ...settings.billing, freePostsPerMonth: parseInt(e.target.value) || 10 })} min="0" />
+                    <p className={styles.fieldHint}>Number of posts each user can publish for free per month.</p>
+                  </div>
+                  <div className={styles.field}>
+                    <label className={styles.fieldLabel}>Price per additional post (paise)</label>
+                    <input className={styles.inputSmall} type="number" value={settings.billing?.pricePerPost || 0} onChange={(e) => update('billing', { ...settings.billing, pricePerPost: parseInt(e.target.value) || 0 })} min="0" />
+                    <p className={styles.fieldHint}>In paise. 1000 = ₹10 per post.</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Flat subscription settings */}
+              {settings.billing?.mode === 'flat' && (
+                <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16, marginTop: 8 }}>
+                  <div className={styles.field}>
+                    <label className={styles.fieldLabel}>Monthly price (paise)</label>
+                    <input className={styles.inputSmall} type="number" value={settings.billing?.flatPrice || 0} onChange={(e) => update('billing', { ...settings.billing, flatPrice: parseInt(e.target.value) || 0 })} min="0" />
+                    <p className={styles.fieldHint}>In paise. 49900 = ₹499/month.</p>
+                  </div>
+                  <div className={styles.field}>
+                    <label className={styles.fieldLabel}>Price label</label>
+                    <input className={styles.input} value={settings.billing?.flatPriceLabel || ''} onChange={(e) => update('billing', { ...settings.billing, flatPriceLabel: e.target.value })} placeholder="₹499/month" style={{ width: 200 }} />
+                  </div>
+                </div>
+              )}
+
+              {/* Trial */}
+              {settings.billing?.mode !== 'free' && (
+                <div className={styles.field} style={{ marginTop: 16 }}>
+                  <label className={styles.fieldLabel}>Trial period (days)</label>
+                  <input className={styles.inputSmall} type="number" value={settings.billing?.trialDays || 0} onChange={(e) => update('billing', { ...settings.billing, trialDays: parseInt(e.target.value) || 0 })} min="0" />
+                  <p className={styles.fieldHint}>New users get full access during trial. Set to 0 for no trial.</p>
+                </div>
+              )}
+
+              {/* Plan management note */}
+              {['free_pro', 'three_tier'].includes(settings.billing?.mode) && (
+                <div className={styles.warningBox} style={{ background: '#DBEAFE', borderColor: '#3B82F6', color: '#1E40AF', marginTop: 16 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  Save these settings first, then manage individual plans (names, prices, limits) from the Plans section below.
+                </div>
+              )}
+
+              {/* Cashfree configuration */}
+              {settings.billing?.mode !== 'free' && (
+                <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20, marginTop: 20 }}>
+                  <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Cashfree Payments</h3>
+                  <p className={styles.fieldHint} style={{ marginBottom: 16 }}>Connect Cashfree to accept UPI, cards, and net banking. Leave empty to run without payments (admin manually assigns plans).</p>
+
+                  <div className={styles.field}>
+                    <label className={styles.fieldLabel}>Environment</label>
+                    <select className={styles.input} value={settings.billing?.cashfreeEnvironment || 'sandbox'} onChange={(e) => update('billing', { ...settings.billing, cashfreeEnvironment: e.target.value })} style={{ width: 180 }}>
+                      <option value="sandbox">Sandbox (testing)</option>
+                      <option value="production">Production (live)</option>
+                    </select>
+                  </div>
+
+                  <div className={styles.field}>
+                    <label className={styles.fieldLabel}>App ID</label>
+                    <input className={styles.input} value={settings.billing?.cashfreeAppId || ''} onChange={(e) => update('billing', { ...settings.billing, cashfreeAppId: e.target.value })} placeholder="Enter Cashfree App ID" />
+                  </div>
+
+                  <div className={styles.field}>
+                    <label className={styles.fieldLabel}>Secret Key</label>
+                    <input className={styles.inputMono} value={settings.billing?.cashfreeSecretKey ?? ''} onChange={(e) => update('billing', { ...settings.billing, cashfreeSecretKey: e.target.value })} placeholder={settings.billing?.cashfreeSecretKeyMasked || 'Enter Cashfree Secret Key'} autoComplete="off" />
+                  </div>
+
+                  <div className={styles.field}>
+                    <label className={styles.fieldLabel}>Webhook Secret</label>
+                    <input className={styles.inputMono} value={settings.billing?.cashfreeWebhookSecret ?? ''} onChange={(e) => update('billing', { ...settings.billing, cashfreeWebhookSecret: e.target.value })} placeholder="Cashfree webhook secret" autoComplete="off" />
+                    <p className={styles.fieldHint}>Set the webhook URL in Cashfree dashboard to: <code style={{ background: 'var(--hover)', padding: '1px 4px', borderRadius: 3, fontSize: 12 }}>{settings.platformUrl || 'https://your-domain.com'}/api/webhooks/cashfree</code></p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

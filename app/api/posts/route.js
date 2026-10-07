@@ -14,6 +14,7 @@ import {
 } from '@/lib/api';
 import { getOwnerId, unauthorized } from '@/lib/currentUser';
 import { trackActivity } from '@/lib/activity';
+import { checkLimit, incrementUsage } from '@/lib/limits';
 
 export async function GET(request) {
   try {
@@ -55,6 +56,8 @@ export async function POST(request) {
   try {
     const ownerId = await getOwnerId(request);
     if (!ownerId) return unauthorized();
+    const limit = await checkLimit(ownerId, 'create_post');
+    if (!limit.allowed) return NextResponse.json({ error: limit.reason, upgrade: limit.upgrade }, { status: 403 });
     const formData = await request.formData();
     const accountId = formData.get('accountId');
     const commentary = formData.get('commentary');
@@ -126,6 +129,7 @@ export async function POST(request) {
     });
 
     trackActivity({ ownerId, action: 'post_created', request, metadata: { postId: post._id.toString(), status: post.status } }).catch(() => {});
+    incrementUsage(ownerId, isDraft).catch(() => {});
     return NextResponse.json(post, { status: 201 });
   } catch (error) {
     return publicError(error, 'Unable to schedule post');

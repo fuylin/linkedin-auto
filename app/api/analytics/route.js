@@ -3,6 +3,7 @@ import { connectDB } from '@/lib/db';
 import Post from '@/lib/models/Post';
 import { fetchPostAnalytics } from '@/lib/linkedinAnalytics';
 import { publicError } from '@/lib/api';
+import { checkLimit } from '@/lib/limits';
 import { getOwnerId, unauthorized } from '@/lib/currentUser';
 
 // GET — return aggregated analytics data
@@ -10,6 +11,8 @@ export async function GET(request) {
   try {
     const ownerId = await getOwnerId(request);
     if (!ownerId) return unauthorized();
+    const limit = await checkLimit(ownerId, 'access_analytics');
+    if (!limit.allowed) return NextResponse.json({ error: limit.reason, upgrade: limit.upgrade }, { status: 403 });
     await connectDB();
 
     const published = await Post.find({ ownerId, status: 'PUBLISHED' })

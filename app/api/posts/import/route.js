@@ -10,6 +10,7 @@ import Account from '@/lib/models/Account';
 import Post from '@/lib/models/Post';
 import { getOwnerId, unauthorized } from '@/lib/currentUser';
 import { trackActivity } from '@/lib/activity';
+import { checkLimit } from '@/lib/limits';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -27,6 +28,8 @@ function cellValue(value) {
 export async function POST(request) {
   const ownerId = await getOwnerId(request);
   if (!ownerId) return unauthorized();
+  const limit = await checkLimit(ownerId, 'access_import');
+  if (!limit.allowed) return Response.json({ error: limit.reason, upgrade: limit.upgrade }, { status: 403 });
 
   try {
     const form = await request.formData();
