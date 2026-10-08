@@ -13,6 +13,18 @@ const TABS = [
   { id: 'billing', label: 'Billing', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> },
 ];
 
+const DEFAULT_PLANS = {
+  free_pro: [
+    { slug: 'free', name: 'Free', priceMonthly: 0, isDefault: true, limits: { maxPostsPerMonth: 10, maxTemplates: 5, analyticsAccess: false, importAccess: false, bulkActionsAccess: false, maxPosts: -1, maxAccounts: -1, calendarAccess: true } },
+    { slug: 'pro', name: 'Pro', priceMonthly: 49900, isDefault: false, limits: { maxPostsPerMonth: -1, maxTemplates: -1, analyticsAccess: true, importAccess: true, bulkActionsAccess: true, maxPosts: -1, maxAccounts: -1, calendarAccess: true } },
+  ],
+  three_tier: [
+    { slug: 'free', name: 'Free', priceMonthly: 0, isDefault: true, limits: { maxPostsPerMonth: 5, maxTemplates: 3, analyticsAccess: false, importAccess: false, bulkActionsAccess: false, maxPosts: -1, maxAccounts: -1, calendarAccess: true } },
+    { slug: 'pro', name: 'Pro', priceMonthly: 49900, isDefault: false, limits: { maxPostsPerMonth: 50, maxTemplates: 20, analyticsAccess: true, importAccess: true, bulkActionsAccess: false, maxPosts: -1, maxAccounts: -1, calendarAccess: true } },
+    { slug: 'business', name: 'Business', priceMonthly: 99900, isDefault: false, limits: { maxPostsPerMonth: -1, maxTemplates: -1, analyticsAccess: true, importAccess: true, bulkActionsAccess: true, maxPosts: -1, maxAccounts: -1, calendarAccess: true } },
+  ],
+};
+
 export default function AdminSettingsPage() {
   const router = useRouter();
   const [settings, setSettings] = useState(null);
@@ -21,6 +33,12 @@ export default function AdminSettingsPage() {
   const [testing, setTesting] = useState(false);
   const [msg, setMsg] = useState({ text: '', type: '' });
   const [tab, setTab] = useState('email');
+  const [plans, setPlans] = useState([]);
+  const [planSaving, setPlanSaving] = useState(false);
+
+  const fetchPlans = () => {
+    fetch('/api/admin/plans').then((r) => r.json()).then((d) => { if (d.success) setPlans(d.plans || []); }).catch(() => {});
+  };
 
   useEffect(() => {
     fetch('/api/admin/settings')
@@ -31,6 +49,7 @@ export default function AdminSettingsPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+    fetchPlans();
   }, []);
 
   const update = (key, value) => setSettings((s) => ({ ...s, [key]: value }));
@@ -65,6 +84,40 @@ export default function AdminSettingsPage() {
       setMsg({ text: json.success ? json.message : json.error, type: json.success ? 'success' : 'error' });
     } catch { setMsg({ text: 'Failed to send test email.', type: 'error' }); }
     setTesting(false);
+  };
+
+  const seedPlans = async (mode) => {
+    const defaults = DEFAULT_PLANS[mode];
+    if (!defaults) return;
+    setPlanSaving(true);
+    for (const p of defaults) {
+      await fetch('/api/admin/plans', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...p, applicableModes: [mode] }),
+      }).catch(() => {});
+    }
+    fetchPlans();
+    setPlanSaving(false);
+    setMsg({ text: `Default plans created for ${mode} mode.`, type: 'success' });
+    setTimeout(() => setMsg({ text: '', type: '' }), 3000);
+  };
+
+  const savePlan = async (plan) => {
+    setPlanSaving(true);
+    const method = plan._id ? 'PUT' : 'POST';
+    const url = plan._id ? `/api/admin/plans/${plan._id}` : '/api/admin/plans';
+    await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(plan) });
+    fetchPlans();
+    setPlanSaving(false);
+  };
+
+  const deletePlan = async (id) => {
+    if (!confirm('Delete this plan?')) return;
+    const res = await fetch(`/api/admin/plans/${id}`, { method: 'DELETE' });
+    const json = await res.json();
+    if (!json.success) { setMsg({ text: json.error, type: 'error' }); return; }
+    fetchPlans();
   };
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--background)' }}>Loading...</div>;
@@ -501,11 +554,81 @@ export default function AdminSettingsPage() {
                 </div>
               )}
 
-              {/* Plan management note */}
+              {/* Plan editor */}
               {['free_pro', 'three_tier'].includes(settings.billing?.mode) && (
-                <div className={styles.warningBox} style={{ background: '#DBEAFE', borderColor: '#3B82F6', color: '#1E40AF', marginTop: 16 }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                  Save these settings first, then manage individual plans (names, prices, limits) from the Plans section below.
+                <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20, marginTop: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <h3 style={{ fontSize: 14, fontWeight: 700 }}>Plans</h3>
+                    {plans.filter(p => p.applicableModes?.includes(settings.billing?.mode)).length === 0 && (
+                      <button className="btn btn-primary btn-sm" onClick={() => seedPlans(settings.billing.mode)} disabled={planSaving}>
+                        {planSaving ? 'Creating...' : 'Create default plans'}
+                      </button>
+                    )}
+                  </div>
+
+                  {plans.filter(p => p.applicableModes?.includes(settings.billing?.mode) && p.isActive !== false).length === 0 ? (
+                    <p style={{ fontSize: 13, color: 'var(--ink-faint)' }}>No plans yet. Click "Create default plans" to get started with sensible defaults.</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                      {plans.filter(p => p.applicableModes?.includes(settings.billing?.mode) && p.isActive !== false).map((plan) => (
+                        <div key={plan._id || plan.slug} style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: 16, background: 'var(--background)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <strong style={{ fontSize: 15 }}>{plan.name}</strong>
+                              {plan.isDefault && <span style={{ fontSize: 10, background: 'var(--blue-light)', color: 'var(--blue)', padding: '1px 6px', borderRadius: 8, fontWeight: 700 }}>DEFAULT</span>}
+                              {plan.subscriberCount > 0 && <span style={{ fontSize: 11, color: 'var(--ink-faint)' }}>{plan.subscriberCount} user{plan.subscriberCount !== 1 ? 's' : ''}</span>}
+                            </div>
+                            <button className="btn btn-ghost btn-sm" onClick={() => deletePlan(plan._id)} style={{ color: 'var(--red)', fontSize: 12 }}>Delete</button>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                            <div>
+                              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-faint)', display: 'block', marginBottom: 3 }}>Name</label>
+                              <input value={plan.name} onChange={(e) => { const updated = plans.map(p => p._id === plan._id ? { ...p, name: e.target.value } : p); setPlans(updated); }} style={{ width: '100%', padding: '6px 8px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 6, fontFamily: 'var(--sans)' }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-faint)', display: 'block', marginBottom: 3 }}>Price (paise/month)</label>
+                              <input type="number" value={plan.priceMonthly || 0} onChange={(e) => { const updated = plans.map(p => p._id === plan._id ? { ...p, priceMonthly: parseInt(e.target.value) || 0 } : p); setPlans(updated); }} style={{ width: '100%', padding: '6px 8px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 6 }} />
+                              {plan.priceMonthly > 0 && <span style={{ fontSize: 11, color: 'var(--ink-faint)' }}>= ₹{(plan.priceMonthly / 100).toFixed(0)}/mo</span>}
+                            </div>
+                            <div>
+                              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-faint)', display: 'block', marginBottom: 3 }}>Posts/month (-1=unlimited)</label>
+                              <input type="number" value={plan.limits?.maxPostsPerMonth ?? -1} onChange={(e) => { const updated = plans.map(p => p._id === plan._id ? { ...p, limits: { ...p.limits, maxPostsPerMonth: parseInt(e.target.value) } } : p); setPlans(updated); }} style={{ width: '100%', padding: '6px 8px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 6 }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-faint)', display: 'block', marginBottom: 3 }}>Templates (-1=unlimited)</label>
+                              <input type="number" value={plan.limits?.maxTemplates ?? -1} onChange={(e) => { const updated = plans.map(p => p._id === plan._id ? { ...p, limits: { ...p.limits, maxTemplates: parseInt(e.target.value) } } : p); setPlans(updated); }} style={{ width: '100%', padding: '6px 8px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 6 }} />
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: 12, marginTop: 10, flexWrap: 'wrap' }}>
+                            {[
+                              { key: 'analyticsAccess', label: 'Analytics' },
+                              { key: 'importAccess', label: 'CSV Import' },
+                              { key: 'bulkActionsAccess', label: 'Bulk Actions' },
+                              { key: 'calendarAccess', label: 'Calendar' },
+                            ].map(({ key, label }) => (
+                              <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--ink-muted)', cursor: 'pointer' }}>
+                                <input type="checkbox" checked={plan.limits?.[key] !== false} onChange={(e) => { const updated = plans.map(p => p._id === plan._id ? { ...p, limits: { ...p.limits, [key]: e.target.checked } } : p); setPlans(updated); }} />
+                                {label}
+                              </label>
+                            ))}
+                          </div>
+
+                          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                            <button className="btn btn-primary btn-sm" onClick={() => savePlan(plan)} disabled={planSaving} style={{ fontSize: 12 }}>
+                              {planSaving ? '...' : 'Save plan'}
+                            </button>
+                            {!plan.isDefault && (
+                              <button className="btn btn-ghost btn-sm" onClick={() => savePlan({ ...plan, isDefault: true })} disabled={planSaving} style={{ fontSize: 12 }}>
+                                Set as default
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
