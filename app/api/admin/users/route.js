@@ -304,7 +304,37 @@ export async function GET(request) {
       totalActions: users.reduce((s, u) => s + u.totalActions, 0),
     };
 
-    return NextResponse.json({ success: true, users, platformStats });
+    // Find top engager — user whose posts have the most total engagement
+    const engagementAgg = await Post.aggregate([
+      { $match: { ownerId: { $in: ownerIds }, status: 'PUBLISHED' } },
+      { $group: {
+        _id: '$ownerId',
+        totalEngagement: { $sum: { $add: [
+          { $ifNull: ['$analytics.likes', 0] },
+          { $ifNull: ['$analytics.comments', 0] },
+          { $ifNull: ['$analytics.shares', 0] },
+        ] } },
+        publishedCount: { $sum: 1 },
+      }},
+      { $sort: { totalEngagement: -1 } },
+      { $limit: 1 },
+    ]);
+
+    let topEngager = null;
+    if (engagementAgg.length > 0) {
+      const topUser = users.find(u => u.ownerId === engagementAgg[0]._id);
+      if (topUser) {
+        topEngager = {
+          displayName: topUser.displayName,
+          profilePictureUrl: topUser.profilePictureUrl,
+          totalEngagement: engagementAgg[0].totalEngagement,
+          publishedCount: engagementAgg[0].publishedCount,
+          ownerId: topUser.ownerId,
+        };
+      }
+    }
+
+    return NextResponse.json({ success: true, users, platformStats, topEngager });
   } catch (error) {
     console.error('[ADMIN USERS]', error);
     return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 });

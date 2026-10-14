@@ -78,7 +78,7 @@ export default function AdminDashboardPage() {
     </div></main>
   );
 
-  const { users, platformStats: ps } = data;
+  const { users, platformStats: ps, topEngager } = data;
 
   return (
     <main className={styles.page}>
@@ -94,7 +94,8 @@ export default function AdminDashboardPage() {
               <p className={styles.headerSub}>Platform overview and user management</p>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <a href="/api/admin/export" className="btn btn-ghost" download>Export All</a>
             <a href="/admin/security" className="btn btn-ghost">Security</a>
             <a href="/admin/settings" className="btn btn-ghost">Settings</a>
             <button className="btn btn-ghost" onClick={fetchAll}>Refresh</button>
@@ -121,6 +122,24 @@ export default function AdminDashboardPage() {
             </div>
           ))}
         </div>
+
+        {/* Top engager */}
+        {topEngager && (
+          <div style={{ marginBottom: 20, padding: '16px 20px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', borderLeft: '4px solid var(--green)', display: 'flex', alignItems: 'center', gap: 14 }}>
+            {topEngager.profilePictureUrl ? (
+              <img src={topEngager.profilePictureUrl} alt="" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
+            ) : (
+              <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--blue-light)', color: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
+                {(topEngager.displayName || '?')[0]}
+              </div>
+            )}
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>Top Engager: {topEngager.displayName}</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-faint)' }}>{topEngager.totalEngagement} total interactions across {topEngager.publishedCount} published posts</div>
+            </div>
+            <a href={`/admin/users/${topEngager.ownerId}`} className="btn btn-ghost btn-sm" style={{ fontSize: 12 }}>View</a>
+          </div>
+        )}
 
         {/* Action message */}
         {actionMsg && <div style={{ padding: '10px 16px', background: '#D1FAE5', color: '#065F46', borderRadius: 8, marginBottom: 16, fontSize: 14, fontWeight: 600 }}>{actionMsg}</div>}
