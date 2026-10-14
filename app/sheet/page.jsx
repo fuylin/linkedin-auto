@@ -17,9 +17,8 @@ export default function SheetPage() {
   const [accounts, setAccounts] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showAdd, setShowAdd] = useState(false);
+  const [newRows, setNewRows] = useState([]);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
-  const [newRow, setNewRow] = useState({ accountId: '', commentary: '', scheduledAt: '', imageUrl: '' });
   const [editId, setEditId] = useState(null);
   const [editData, setEditData] = useState({});
   const [saving, setSaving] = useState(false);
@@ -52,23 +51,62 @@ export default function SheetPage() {
     return () => document.removeEventListener('mousedown', handler);
   }, [showTemplatePicker]);
 
-  // ── Add row ──
-  const addPost = async () => {
-    if (!newRow.accountId || !newRow.commentary.trim()) return;
-    setSaving(true);
+  // ── Multi-row add ──
+  const emptyRow = () => ({ id: Date.now() + Math.random(), accountId: '', commentary: '', scheduledAt: '', imageUrl: '' });
+
+  const addNewRow = () => setNewRows((prev) => [...prev, emptyRow()]);
+
+  const updateNewRow = (id, key, value) => {
+    setNewRows((prev) => prev.map((r) => r.id === id ? { ...r, [key]: value } : r));
+  };
+
+  const removeNewRow = (id) => {
+    setNewRows((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  const saveOneRow = async (row) => {
+    if (!row.accountId || !row.commentary.trim()) { addToast('error', 'Account and text are required'); return false; }
     const data = new FormData();
-    data.append('accountId', newRow.accountId);
-    data.append('commentary', newRow.commentary);
-    if (newRow.scheduledAt) data.append('scheduledAt', new Date(newRow.scheduledAt).toISOString());
+    data.append('accountId', row.accountId);
+    data.append('commentary', row.commentary);
+    if (row.scheduledAt) data.append('scheduledAt', new Date(row.scheduledAt).toISOString());
     else data.append('isDraft', 'true');
-    if (newRow.imageUrl.trim()) data.append('imageUrl', newRow.imageUrl.trim());
+    if (row.imageUrl.trim()) data.append('imageUrl', row.imageUrl.trim());
+    const res = await fetch('/api/posts', { method: 'POST', body: data });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error);
+    return true;
+  };
+
+  const saveAllRows = async () => {
+    const valid = newRows.filter((r) => r.commentary.trim() && r.accountId);
+    if (valid.length === 0) { addToast('error', 'No rows to save — add text and select an account'); return; }
+    setSaving(true);
+    let saved = 0;
+    let failed = 0;
+    for (const row of valid) {
+      try {
+        await saveOneRow(row);
+        saved++;
+        removeNewRow(row.id);
+      } catch (err) {
+        failed++;
+        addToast('error', `Row failed: ${err.message}`);
+      }
+    }
+    if (saved > 0) {
+      addToast('success', `${saved} post${saved !== 1 ? 's' : ''} saved.${failed > 0 ? ` ${failed} failed.` : ''}`);
+      fetchAll();
+    }
+    setSaving(false);
+  };
+
+  const saveSingleRow = async (row) => {
+    setSaving(true);
     try {
-      const res = await fetch('/api/posts', { method: 'POST', body: data });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error);
-      addToast('success', newRow.scheduledAt ? 'Post scheduled!' : 'Draft saved!');
-      setNewRow({ accountId: '', commentary: '', scheduledAt: '', imageUrl: '' });
-      setShowAdd(false);
+      await saveOneRow(row);
+      addToast('success', row.scheduledAt ? 'Post scheduled!' : 'Draft saved!');
+      removeNewRow(row.id);
       fetchAll();
     } catch (err) { addToast('error', err.message); }
     setSaving(false);
@@ -155,9 +193,9 @@ export default function SheetPage() {
 
   // ── Template ──
   const useTemplate = (tpl) => {
-    setNewRow((prev) => ({ ...prev, commentary: tpl.content }));
+    // Add template content as a new row
+    setNewRows((prev) => [...prev, { ...emptyRow(), commentary: tpl.content }]);
     setShowTemplatePicker(false);
-    if (!showAdd) setShowAdd(true);
     fetch(`/api/templates/${tpl._id}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ usageCount: (tpl.usageCount || 0) + 1 }),
@@ -180,9 +218,15 @@ export default function SheetPage() {
 
       <div className={styles.toolbar}>
         <div className={styles.toolbarLeft}>
-          <button className="btn btn-primary btn-sm" onClick={() => setShowAdd(!showAdd)}>
-            {showAdd ? 'Cancel' : '+ Add Row'}
-          </button>
+          <button className="btn btn-primary btn-sm" onClick={addNewRow}>+ Add Row</button>
+          {newRows.length > 0 && (
+            <>
+              <button className="btn btn-outline btn-sm" onClick={saveAllRows} disabled={saving} style={{ color: 'var(--green)', borderColor: 'var(--green)' }}>
+                {saving ? 'Saving...' : `Save all (${newRows.filter(r => r.commentary.trim() && r.accountId).length})`}
+              </button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setNewRows([])} style={{ fontSize: 12 }}>Clear all</button>
+            </>
+          )}
           <div className={styles.templatePicker} ref={pickerRef}>
             <button className="btn btn-outline btn-sm" onClick={() => setShowTemplatePicker(!showTemplatePicker)}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -239,30 +283,35 @@ export default function SheetPage() {
                 </tr>
               </thead>
               <tbody>
-                {/* New row form */}
-                {showAdd && (
-                  <tr className={styles.addRow}>
+                {/* New rows */}
+                {newRows.map((row) => (
+                  <tr key={row.id} className={styles.addRow}>
                     <td className={styles.rowNum}>+</td>
                     <td><span className="badge badge-draft">NEW</span></td>
                     <td>
-                      <textarea value={newRow.commentary} onChange={(e) => setNewRow({ ...newRow, commentary: e.target.value })} placeholder="Write your post content here..." maxLength={3000} rows={3} />
-                      <div className={styles.charCount}>{newRow.commentary.length}/3000</div>
+                      <textarea value={row.commentary} onChange={(e) => updateNewRow(row.id, 'commentary', e.target.value)} placeholder="Write your post content..." maxLength={3000} rows={2} />
+                      <div className={styles.charCount}>{row.commentary.length}/3000</div>
                     </td>
                     <td>
-                      <textarea className={styles.imageInput} value={newRow.imageUrl} onChange={(e) => setNewRow({ ...newRow, imageUrl: e.target.value })} placeholder="Paste image URL here&#10;e.g. https://example.com/photo.jpg" rows={2} />
+                      <textarea className={styles.imageInput} value={row.imageUrl} onChange={(e) => updateNewRow(row.id, 'imageUrl', e.target.value)} placeholder="Image URL (optional)" rows={1} />
                     </td>
                     <td>
-                      <select value={newRow.accountId} onChange={(e) => setNewRow({ ...newRow, accountId: e.target.value })} style={{ minWidth: 140 }}>
-                        <option value="">Select account...</option>
+                      <select value={row.accountId} onChange={(e) => updateNewRow(row.id, 'accountId', e.target.value)}>
+                        <option value="">Account...</option>
                         {accounts.map((a) => <option key={a._id} value={a._id}>{a.displayName || a.authorUrn}</option>)}
                       </select>
                     </td>
-                    <td><input type="datetime-local" value={newRow.scheduledAt} onChange={(e) => setNewRow({ ...newRow, scheduledAt: e.target.value })} min={toLocalDatetimeValue(new Date())} /></td>
+                    <td><input type="datetime-local" value={row.scheduledAt} onChange={(e) => updateNewRow(row.id, 'scheduledAt', e.target.value)} min={toLocalDatetimeValue(new Date())} /></td>
                     <td className={styles.cellMuted}>—</td>
                     <td className={styles.cellMuted}>—</td>
-                    <td><button className="btn btn-primary btn-sm" onClick={addPost} disabled={saving || !newRow.commentary.trim() || !newRow.accountId}>{saving ? '...' : 'Save'}</button></td>
+                    <td>
+                      <div className={styles.cellActions}>
+                        <button className="btn btn-primary btn-sm" onClick={() => saveSingleRow(row)} disabled={saving || !row.commentary.trim() || !row.accountId} style={{ fontSize: 11 }}>Save</button>
+                        <button className="btn btn-ghost btn-sm" onClick={() => removeNewRow(row.id)} style={{ fontSize: 11, color: 'var(--red)' }}>✕</button>
+                      </div>
+                    </td>
                   </tr>
-                )}
+                ))}
 
                 {/* Data rows */}
                 {posts.map((post, idx) => {

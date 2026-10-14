@@ -385,9 +385,35 @@ export default function AdminSettingsPage() {
               </div>
 
               <div className={styles.field}>
-                <label className={styles.fieldLabel}>Logo URL</label>
-                <input className={styles.input} value={settings.logoUrl || ''} onChange={(e) => update('logoUrl', e.target.value)} placeholder="https://example.com/logo.png" />
-                <p className={styles.fieldHint}>Direct URL to your logo image. Appears in the sidebar and mobile header.</p>
+                <label className={styles.fieldLabel}>Logo</label>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  {settings.logoUrl && (
+                    <img src={settings.logoUrl} alt="Logo" style={{ height: 40, maxWidth: 160, objectFit: 'contain', border: '1px solid var(--border)', borderRadius: 6, padding: 4 }} />
+                  )}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        Upload logo
+                        <input type="file" accept="image/*" style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} onChange={async (e) => {
+                          const file = e.target.files[0];
+                          if (!file) return;
+                          const fd = new FormData();
+                          fd.append('file', file);
+                          fd.append('type', 'logo');
+                          const res = await fetch('/api/admin/upload', { method: 'POST', body: fd });
+                          const json = await res.json();
+                          if (json.success) { update('logoUrl', json.url); setMsg({ text: 'Logo uploaded!', type: 'success' }); }
+                          else setMsg({ text: json.error, type: 'error' });
+                          setTimeout(() => setMsg({ text: '', type: '' }), 3000);
+                        }} />
+                      </label>
+                      {settings.logoUrl && <button className="btn btn-ghost btn-sm" onClick={() => update('logoUrl', '')} style={{ color: 'var(--red)', fontSize: 12 }}>Remove</button>}
+                    </div>
+                    <input className={styles.input} value={settings.logoUrl || ''} onChange={(e) => update('logoUrl', e.target.value)} placeholder="Or paste URL: https://..." style={{ marginTop: 8, fontSize: 12 }} />
+                  </div>
+                </div>
+                <p className={styles.fieldHint}>Appears in the sidebar and mobile header. Upload or paste a URL.</p>
               </div>
 
               <div className={styles.field}>
@@ -400,9 +426,29 @@ export default function AdminSettingsPage() {
               </div>
 
               <div className={styles.field}>
-                <label className={styles.fieldLabel}>Favicon URL</label>
-                <input className={styles.input} value={settings.faviconUrl || ''} onChange={(e) => update('faviconUrl', e.target.value)} placeholder="https://example.com/favicon.ico" />
-                <p className={styles.fieldHint}>Browser tab icon. Use a .ico, .png, or .svg file.</p>
+                <label className={styles.fieldLabel}>Favicon</label>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  {settings.faviconUrl && <img src={settings.faviconUrl} alt="Favicon" style={{ width: 24, height: 24, objectFit: 'contain' }} />}
+                  <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Upload favicon
+                    <input type="file" accept="image/png,image/x-icon,image/svg+xml" style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      const fd = new FormData();
+                      fd.append('file', file);
+                      fd.append('type', 'favicon');
+                      const res = await fetch('/api/admin/upload', { method: 'POST', body: fd });
+                      const json = await res.json();
+                      if (json.success) { update('faviconUrl', json.url); setMsg({ text: 'Favicon uploaded!', type: 'success' }); }
+                      else setMsg({ text: json.error, type: 'error' });
+                      setTimeout(() => setMsg({ text: '', type: '' }), 3000);
+                    }} />
+                  </label>
+                  <input className={styles.input} value={settings.faviconUrl || ''} onChange={(e) => update('faviconUrl', e.target.value)} placeholder="Or paste URL" style={{ flex: 1, fontSize: 12 }} />
+                  {settings.faviconUrl && <button className="btn btn-ghost btn-sm" onClick={() => update('faviconUrl', '')} style={{ color: 'var(--red)', fontSize: 12 }}>Remove</button>}
+                </div>
+                <p className={styles.fieldHint}>Browser tab icon. Upload a .ico, .png, or .svg file.</p>
               </div>
 
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20, marginTop: 8 }}>
