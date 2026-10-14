@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from '@/components/ToastProvider';
 import LocalTime from '@/components/LocalTime';
+import ImportModal from '@/components/ImportModal';
 import styles from './page.module.css';
 
 function toLocalDatetimeValue(date) {
@@ -22,6 +23,7 @@ export default function SheetPage() {
   const [editId, setEditId] = useState(null);
   const [editData, setEditData] = useState({});
   const [saving, setSaving] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const pickerRef = useRef(null);
   const addToast = useToast();
 
@@ -203,6 +205,12 @@ export default function SheetPage() {
           </div>
         </div>
         <div className={styles.toolbarRight}>
+          <button className="btn btn-outline btn-sm" onClick={() => setImportOpen(true)}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            Import
+          </button>
           <a href="/api/posts/export" className="btn btn-outline btn-sm" download>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -336,6 +344,13 @@ export default function SheetPage() {
           </div>
         </>
       )}
+
+      <ImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        accounts={accounts}
+        onImported={fetchAll}
+      />
     </div>
   );
 }
