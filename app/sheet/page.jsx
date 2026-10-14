@@ -377,7 +377,7 @@ export default function SheetPage() {
                   );
                 })}
 
-                {posts.length === 0 && !showAdd && (
+                {posts.length === 0 && newRows.length === 0 && (
                   <tr><td colSpan="9" style={{ textAlign: 'center', padding: 40, color: 'var(--ink-faint)' }}>No posts yet. Click "+ Add Row" or "From Template".</td></tr>
                 )}
               </tbody>
