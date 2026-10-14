@@ -11,15 +11,17 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .toolbarRight {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
-/* Table wrapper */
+/* Table wrapper — full width, no forced horizontal scroll */
 .tableWrap {
   overflow-x: auto;
   border: 1px solid var(--border);
@@ -32,12 +34,12 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
-  min-width: 1200px;
+  table-layout: fixed;
 }
 
 .table th {
   text-align: left;
-  padding: 12px 14px;
+  padding: 12px 12px;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -49,35 +51,32 @@
   top: 0;
   z-index: 2;
   white-space: nowrap;
+  overflow: hidden;
 }
 
 .table td {
-  padding: 12px 14px;
+  padding: 12px 12px;
   border-bottom: 1px solid var(--border);
   vertical-align: top;
   color: var(--ink);
+  overflow: hidden;
 }
 
-.table tr:last-child td {
-  border-bottom: none;
-}
+.table tr:last-child td { border-bottom: none; }
 
-.table tbody tr {
-  transition: background 0.1s;
-}
-.table tbody tr:hover td {
-  background: var(--hover);
-}
+.table tbody tr { transition: background 0.1s; }
+.table tbody tr:hover td { background: var(--hover); }
 
-/* Column widths */
+/* Column widths — fixed layout, percentages add up to 100% */
+.colNum { width: 36px; }
 .colStatus { width: 90px; }
-.colText { min-width: 250px; }
-.colImage { min-width: 200px; }
-.colAccount { min-width: 150px; }
-.colScheduled { min-width: 170px; }
-.colPublished { min-width: 150px; }
-.colError { min-width: 140px; }
-.colActions { min-width: 180px; text-align: center; }
+.colText { width: 30%; }
+.colImage { width: 12%; }
+.colAccount { width: 10%; }
+.colScheduled { width: 13%; }
+.colPublished { width: 13%; }
+.colError { width: 10%; }
+.colActions { width: 12%; text-align: center; }
 
 /* Cell content */
 .cellText {
@@ -86,7 +85,6 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   line-height: 1.6;
-  max-width: 400px;
   white-space: pre-wrap;
   word-break: break-word;
   font-size: 13px;
@@ -95,12 +93,14 @@
 .cellMuted {
   color: var(--ink-faint);
   font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cellError {
   color: var(--red);
   font-size: 12px;
-  max-width: 150px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -120,19 +120,18 @@
 .imageCell {
   display: flex;
   align-items: center;
-  gap: 6px;
-  max-width: 160px;
+  gap: 4px;
 }
 
 .imageBadge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   font-size: 11px;
   font-weight: 600;
   color: var(--green);
   background: #D1FAE5;
-  padding: 2px 8px;
+  padding: 2px 6px;
   border-radius: var(--radius-pill);
   white-space: nowrap;
 }
@@ -143,9 +142,8 @@
 }
 
 .imageUrl {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--ink-faint);
-  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -155,7 +153,7 @@
 /* ── Add row form ── */
 .addRow td {
   background: var(--blue-light) !important;
-  padding: 10px 12px;
+  padding: 10px 10px;
   vertical-align: middle;
 }
 
@@ -163,7 +161,7 @@
 .addRow textarea,
 .addRow select {
   width: 100%;
-  padding: 8px 10px;
+  padding: 8px 8px;
   font-size: 13px;
   border: 1.5px solid var(--border);
   border-radius: 8px;
@@ -185,16 +183,15 @@
   min-height: 56px;
 }
 
-/* Image URL input in add row — textarea style for full visibility */
+/* Image URL input */
 .imageInput {
   width: 100% !important;
-  min-width: 180px !important;
-  font-size: 12px !important;
-  padding: 8px 10px !important;
+  font-size: 11px !important;
+  padding: 6px 8px !important;
   font-family: 'Cascadia Code', 'Fira Code', monospace;
   word-break: break-all;
   resize: vertical;
-  min-height: 44px;
+  min-height: 40px;
   line-height: 1.4;
 }
 
@@ -205,7 +202,7 @@
 
 .editInput {
   width: 100%;
-  padding: 8px 10px;
+  padding: 8px 8px;
   font-size: 13px;
   border: 1.5px solid var(--primary-green);
   border-radius: 8px;
@@ -222,6 +219,7 @@
   font-weight: 600;
   color: var(--ink-faint);
   font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
 /* ── Stats bar ── */
@@ -236,14 +234,10 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
 }
-.stats strong {
-  color: var(--ink);
-}
+.stats strong { color: var(--ink); }
 
 /* ── Template picker ── */
-.templatePicker {
-  position: relative;
-}
+.templatePicker { position: relative; }
 
 .templateDropdown {
   position: absolute;
@@ -276,10 +270,7 @@
 .templateItem:last-child { border-bottom: none; }
 .templateItem:hover { background: var(--hover); }
 
-.templateItemName {
-  font-weight: 600;
-  margin-bottom: 2px;
-}
+.templateItemName { font-weight: 600; margin-bottom: 2px; }
 .templateItemPreview {
   font-size: 12px;
   color: var(--ink-faint);
@@ -289,7 +280,6 @@
   overflow: hidden;
 }
 
-/* ── Char count in add/edit ── */
 .charCount {
   font-size: 11px;
   color: var(--ink-faint);
@@ -297,8 +287,10 @@
   margin-top: 2px;
 }
 
+/* ── Mobile ── */
 @media (max-width: 768px) {
   .toolbar { flex-direction: column; align-items: stretch; }
   .toolbarLeft, .toolbarRight { justify-content: space-between; }
   .stats { flex-wrap: wrap; gap: 10px; }
+  .table { table-layout: auto; }
 }

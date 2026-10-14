@@ -227,10 +227,10 @@ export default function SheetPage() {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th style={{ width: 30 }}>#</th>
+                  <th className={styles.colNum}>#</th>
                   <th className={styles.colStatus}>Status</th>
                   <th className={styles.colText}>Post Text</th>
-                  <th className={styles.colImage}>Image URL</th>
+                  <th className={styles.colImage}>Image</th>
                   <th className={styles.colAccount}>Account</th>
                   <th className={styles.colScheduled}>Scheduled</th>
                   <th className={styles.colPublished}>Published</th>
