@@ -102,7 +102,7 @@ function buildPrompt(action, text, topic, tone) {
     case 'generate':
       return `Write a LinkedIn post about: ${topic || 'a professional topic'}.
 Style: ${toneDesc}.
-Rules: 1-3000 characters, use line breaks for readability, include a hook in the first line, end with a call to action.
+Rules: 1-5000 characters, use line breaks for readability, include a hook in the first line, end with a call to action.
 Do NOT use markdown formatting. Do NOT include hashtags (user will add separately).
 Return ONLY the post text, nothing else.`;
 
@@ -111,7 +111,7 @@ Return ONLY the post text, nothing else.`;
 Original post:
 ${text}
 
-Rules: Keep it 1-3000 characters. Use line breaks. Make the opening hook stronger. End with a call to action.
+Rules: Keep it 1-5000 characters. Use line breaks. Make the opening hook stronger. End with a call to action.
 Do NOT use markdown. Do NOT add hashtags.
 Return ONLY the improved post text, nothing else.`;
 
@@ -177,7 +177,7 @@ async function callClaude(apiKey, model, prompt) {
       max_tokens: 1024,
       messages: [{ role: 'user', content: prompt }],
     }),
-    signal: AbortSignal.timeout(30000),
+    signal: AbortSignal.timeout(50000),
   });
   if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error?.message || `Claude API ${res.status}`); }
   const data = await res.json();
@@ -196,7 +196,7 @@ async function callOpenAI(apiKey, model, prompt) {
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 1024,
     }),
-    signal: AbortSignal.timeout(30000),
+    signal: AbortSignal.timeout(50000),
   });
   if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error?.message || `OpenAI API ${res.status}`); }
   const data = await res.json();
@@ -210,7 +210,7 @@ async function callGemini(apiKey, model, prompt) {
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
     }),
-    signal: AbortSignal.timeout(30000),
+    signal: AbortSignal.timeout(50000),
   });
   if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error?.message || `Gemini API ${res.status}`); }
   const data = await res.json();

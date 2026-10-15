@@ -18,7 +18,7 @@ export default function EditPostModal({ post, open, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const charPct = Math.min((commentary.length / 3000) * 100, 100);
+  const charPct = Math.min((commentary.length / 5000) * 100, 100);
 
   const handleSave = async () => {
     setSaving(true);
@@ -66,7 +66,7 @@ export default function EditPostModal({ post, open, onClose, onSaved }) {
         <textarea
           value={commentary}
           onChange={(e) => setCommentary(e.target.value)}
-          maxLength={3000}
+          maxLength={5000}
           rows={6}
           placeholder="What do you want to share?"
         />
@@ -81,7 +81,7 @@ export default function EditPostModal({ post, open, onClose, onSaved }) {
             }} />
           </div>
           <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-            {commentary.length} / 3000
+            {commentary.length} / 5000
           </span>
         </div>
       </div>

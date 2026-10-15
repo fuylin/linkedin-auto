@@ -30,8 +30,8 @@ export async function POST(request) {
     if (!name || typeof name !== 'string' || name.trim().length > 100) {
       return NextResponse.json({ error: 'Name is required (max 100 chars)' }, { status: 400 });
     }
-    if (!content || typeof content !== 'string' || content.trim().length > 3000) {
-      return NextResponse.json({ error: 'Content is required (max 3000 chars)' }, { status: 400 });
+    if (!content || typeof content !== 'string' || content.trim().length > 5000) {
+      return NextResponse.json({ error: 'Content is required (max 5000 chars)' }, { status: 400 });
     }
 
     await connectDB();

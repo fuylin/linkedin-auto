@@ -37,8 +37,8 @@ export async function PUT(request, { params }) {
 
     const body = await request.json();
     if (body.commentary !== undefined) {
-      if (typeof body.commentary !== 'string' || !body.commentary.trim() || body.commentary.trim().length > 3000) {
-        return NextResponse.json({ error: 'Commentary must contain 1 to 3000 characters' }, { status: 400 });
+      if (typeof body.commentary !== 'string' || !body.commentary.trim() || body.commentary.trim().length > 5000) {
+        return NextResponse.json({ error: 'Commentary must contain 1 to 5000 characters' }, { status: 400 });
       }
       post.commentary = body.commentary.trim();
     }

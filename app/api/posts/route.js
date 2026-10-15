@@ -69,8 +69,8 @@ export async function POST(request) {
     if (!isObjectId(accountId)) {
       return NextResponse.json({ error: 'Invalid accountId' }, { status: 400 });
     }
-    if (typeof commentary !== 'string' || !commentary.trim() || commentary.trim().length > 3000) {
-      return NextResponse.json({ error: 'Commentary must contain 1 to 3000 characters' }, { status: 400 });
+    if (typeof commentary !== 'string' || !commentary.trim() || commentary.trim().length > 5000) {
+      return NextResponse.json({ error: 'Commentary must contain 1 to 5000 characters' }, { status: 400 });
     }
 
     let date = null;

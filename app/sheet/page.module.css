@@ -23,18 +23,17 @@
 
 /* Table wrapper — full width, no forced horizontal scroll */
 .tableWrap {
-  overflow-x: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface);
   box-shadow: var(--shadow-sm);
+  overflow: hidden;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
-  table-layout: fixed;
 }
 
 .table th {
@@ -67,16 +66,16 @@
 .table tbody tr { transition: background 0.1s; }
 .table tbody tr:hover td { background: var(--hover); }
 
-/* Column widths — fixed layout, percentages add up to 100% */
-.colNum { width: 36px; }
-.colStatus { width: 90px; }
-.colText { width: 30%; }
-.colImage { width: 12%; }
-.colAccount { width: 10%; }
-.colScheduled { width: 13%; }
-.colPublished { width: 13%; }
-.colError { width: 10%; }
-.colActions { width: 12%; text-align: center; }
+/* Column widths — no min-width to prevent horizontal scroll */
+.colNum { width: 30px; }
+.colStatus { width: 80px; }
+.colText { }
+.colImage { width: 120px; }
+.colAccount { width: 100px; }
+.colScheduled { width: 150px; }
+.colPublished { width: 130px; }
+.colError { width: 100px; }
+.colActions { width: 100px; text-align: center; }
 
 /* Cell content */
 .cellText {
@@ -150,18 +149,18 @@
   display: block;
 }
 
-/* ── Add row form ── */
+/* ── Add row (inline in table) ── */
 .addRow td {
   background: var(--blue-light) !important;
-  padding: 10px 10px;
-  vertical-align: middle;
+  padding: 10px 12px;
+  vertical-align: top;
 }
 
 .addRow input,
 .addRow textarea,
 .addRow select {
   width: 100%;
-  padding: 8px 8px;
+  padding: 9px 10px;
   font-size: 13px;
   border: 1.5px solid var(--border);
   border-radius: 8px;
@@ -180,19 +179,19 @@
 
 .addRow textarea {
   resize: vertical;
-  min-height: 56px;
+  min-height: 70px;
+  line-height: 1.5;
 }
 
-/* Image URL input */
+.addRow select {
+  min-width: 110px;
+}
+
+/* Image URL input in add row */
 .imageInput {
-  width: 100% !important;
-  font-size: 11px !important;
-  padding: 6px 8px !important;
-  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-family: 'Cascadia Code', 'Fira Code', monospace !important;
+  font-size: 12px !important;
   word-break: break-all;
-  resize: vertical;
-  min-height: 40px;
-  line-height: 1.4;
 }
 
 /* ── Editing row ── */
@@ -292,5 +291,4 @@
   .toolbar { flex-direction: column; align-items: stretch; }
   .toolbarLeft, .toolbarRight { justify-content: space-between; }
   .stats { flex-wrap: wrap; gap: 10px; }
-  .table { table-layout: auto; }
 }

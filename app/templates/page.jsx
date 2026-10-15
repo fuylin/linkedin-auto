@@ -120,7 +120,7 @@ export default function TemplatesPage() {
                 onChange={(e) => setForm({ ...form, content: e.target.value })}
                 placeholder="Your template text..."
                 required
-                maxLength={3000}
+                maxLength={5000}
                 rows={6}
               />
             </div>

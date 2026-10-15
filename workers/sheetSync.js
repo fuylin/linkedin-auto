@@ -116,10 +116,10 @@ async function runSyncSheet() {
         if ((post.status === 'PENDING' && ['scheduled', 'pending'].includes(status)) ||
             (post.status === 'DRAFT' && status === 'pending')) {
           const scheduledAt = parseSheetDateTime(date, time, sheet.timeZone);
-          if (!commentary || commentary.length > 3000 || !scheduledAt) {
+          if (!commentary || commentary.length > 5000 || !scheduledAt) {
             await Post.updateOne({ _id: post._id, status: 'PENDING' },
               { $set: { status: 'DRAFT', errorMessage: 'Sheet row requires valid text, date and time' } });
-            await setOutcome(sheet, rowNumber, 'Error', '', 'Use 1-3000 characters, YYYY-MM-DD and HH:mm');
+            await setOutcome(sheet, rowNumber, 'Error', '', 'Use 1-5000 characters, YYYY-MM-DD and HH:mm');
             continue;
           }
           const changed = post.commentary !== commentary ||
@@ -170,7 +170,7 @@ async function runSyncSheet() {
     }
     if (status && status !== 'pending' && !(status === 'scheduled' && key)) continue;
     try {
-      if (commentary.length > 3000) throw new Error('Post text must be 1 to 3000 characters');
+      if (commentary.length > 5000) throw new Error('Post text must be 1 to 5000 characters');
       const scheduledAt = parseSheetDateTime(date, time, sheet.timeZone);
       if (!scheduledAt) throw new Error('Use YYYY-MM-DD in column C and HH:mm in column D');
       account ||= await getAccount();

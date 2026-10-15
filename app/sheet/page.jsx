@@ -283,21 +283,21 @@ export default function SheetPage() {
                 </tr>
               </thead>
               <tbody>
-                {/* New rows */}
+                {/* New rows inline */}
                 {newRows.map((row) => (
                   <tr key={row.id} className={styles.addRow}>
                     <td className={styles.rowNum}>+</td>
                     <td><span className="badge badge-draft">NEW</span></td>
                     <td>
-                      <textarea value={row.commentary} onChange={(e) => updateNewRow(row.id, 'commentary', e.target.value)} placeholder="Write your post content..." maxLength={3000} rows={2} />
-                      <div className={styles.charCount}>{row.commentary.length}/3000</div>
+                      <textarea value={row.commentary} onChange={(e) => updateNewRow(row.id, 'commentary', e.target.value)} placeholder="Write your post content..." maxLength={5000} rows={3} />
+                      <div className={styles.charCount}>{row.commentary.length}/5000</div>
                     </td>
                     <td>
-                      <textarea className={styles.imageInput} value={row.imageUrl} onChange={(e) => updateNewRow(row.id, 'imageUrl', e.target.value)} placeholder="Image URL (optional)" rows={1} />
+                      <input className={styles.imageInput} value={row.imageUrl} onChange={(e) => updateNewRow(row.id, 'imageUrl', e.target.value)} placeholder="https://..." />
                     </td>
                     <td>
                       <select value={row.accountId} onChange={(e) => updateNewRow(row.id, 'accountId', e.target.value)}>
-                        <option value="">Account...</option>
+                        <option value="">Select...</option>
                         {accounts.map((a) => <option key={a._id} value={a._id}>{a.displayName || a.authorUrn}</option>)}
                       </select>
                     </td>
@@ -306,8 +306,8 @@ export default function SheetPage() {
                     <td className={styles.cellMuted}>—</td>
                     <td>
                       <div className={styles.cellActions}>
-                        <button className="btn btn-primary btn-sm" onClick={() => saveSingleRow(row)} disabled={saving || !row.commentary.trim() || !row.accountId} style={{ fontSize: 11 }}>Save</button>
-                        <button className="btn btn-ghost btn-sm" onClick={() => removeNewRow(row.id)} style={{ fontSize: 11, color: 'var(--red)' }}>✕</button>
+                        <button className="btn btn-primary btn-sm" onClick={() => saveSingleRow(row)} disabled={saving || !row.commentary.trim() || !row.accountId} style={{ fontSize: 12 }}>Save</button>
+                        <button className="btn btn-ghost btn-sm" onClick={() => removeNewRow(row.id)} style={{ color: 'var(--red)', fontSize: 14, padding: '2px 6px' }}>✕</button>
                       </div>
                     </td>
                   </tr>
@@ -325,8 +325,8 @@ export default function SheetPage() {
                       <td>
                         {isEditing ? (
                           <>
-                            <textarea value={editData.commentary} onChange={(e) => setEditData({ ...editData, commentary: e.target.value })} maxLength={3000} rows={3} className={styles.editInput} />
-                            <div className={styles.charCount}>{editData.commentary.length}/3000</div>
+                            <textarea value={editData.commentary} onChange={(e) => setEditData({ ...editData, commentary: e.target.value })} maxLength={5000} rows={3} className={styles.editInput} />
+                            <div className={styles.charCount}>{editData.commentary.length}/5000</div>
                           </>
                         ) : (
                           <div className={styles.cellText}>{post.commentary}</div>

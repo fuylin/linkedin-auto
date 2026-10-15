@@ -73,7 +73,7 @@ export default function SchedulePost() {
     setLoading(false);
   };
 
-  const charPct = Math.min((form.commentary.length / 3000) * 100, 100);
+  const charPct = Math.min((form.commentary.length / 5000) * 100, 100);
   const selectedAccount = accounts.find((a) => a._id === form.accountId) || null;
 
   return (
@@ -119,7 +119,7 @@ export default function SchedulePost() {
                 value={form.commentary}
                 onChange={(e) => setForm({ ...form, commentary: e.target.value })}
                 required
-                maxLength={3000}
+                maxLength={5000}
                 rows={6}
               />
               <div className={styles.charCounter}>
@@ -132,7 +132,7 @@ export default function SchedulePost() {
                     }}
                   />
                 </div>
-                <span className={styles.charText}>{form.commentary.length} / 3000</span>
+                <span className={styles.charText}>{form.commentary.length} / 5000</span>
               </div>
               <AIToolbar
                 text={form.commentary}
