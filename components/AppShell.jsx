@@ -50,6 +50,11 @@ function usePlatformStatus() {
       .then((data) => {
         if (data.maintenance) { router.replace('/maintenance'); return; }
         if (data.logoUrl) setLogoUrl(data.logoUrl);
+        if (data.faviconUrl) {
+          let link = document.querySelector('link[rel="icon"]');
+          if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+          link.href = data.faviconUrl;
+        }
         if (data.announcement?.text) {
           const dismissed = sessionStorage.getItem('announcement_dismissed');
           if (!dismissed) setAnnouncement(data.announcement);

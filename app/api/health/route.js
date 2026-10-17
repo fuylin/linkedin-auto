@@ -17,6 +17,7 @@ export async function GET() {
         type: settings.announcementType,
       } : null,
       logoUrl: settings?.logoUrl || null,
+      faviconUrl: settings?.faviconUrl || null,
     });
   } catch (error) {
     console.error('Health check failed:', error);
