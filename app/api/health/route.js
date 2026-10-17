@@ -16,6 +16,7 @@ export async function GET() {
         text: settings.announcementText,
         type: settings.announcementType,
       } : null,
+      logoUrl: settings?.logoUrl || null,
     });
   } catch (error) {
     console.error('Health check failed:', error);

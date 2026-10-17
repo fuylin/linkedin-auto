@@ -36,6 +36,7 @@ function useScreenBeacon() {
 // Check maintenance mode + announcement banner on load.
 function usePlatformStatus() {
   const [announcement, setAnnouncement] = useState(null);
+  const [logoUrl, setLogoUrl] = useState(null);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -48,6 +49,7 @@ function usePlatformStatus() {
       .then((r) => r.json())
       .then((data) => {
         if (data.maintenance) { router.replace('/maintenance'); return; }
+        if (data.logoUrl) setLogoUrl(data.logoUrl);
         if (data.announcement?.text) {
           const dismissed = sessionStorage.getItem('announcement_dismissed');
           if (!dismissed) setAnnouncement(data.announcement);
@@ -71,7 +73,7 @@ function usePlatformStatus() {
     sessionStorage.setItem('announcement_dismissed', '1');
   };
 
-  return { announcement, dismiss };
+  return { announcement, dismiss, logoUrl };
 }
 
 const bannerColors = {
@@ -83,7 +85,8 @@ const bannerColors = {
 export default function AppShell({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const { announcement, dismiss } = usePlatformStatus();
+  const { announcement, dismiss, logoUrl } = usePlatformStatus();
+  const logo = logoUrl || '/FUYL LINKEDINAUTO LOGO.png';
   useSchedulerHeartbeat();
   useScreenBeacon();
 
@@ -93,7 +96,7 @@ export default function AppShell({ children }) {
 
   return (
     <div className={styles.shell}>
-      <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+      <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} logoUrl={logo} />
 
       <div className={styles.main}>
         {/* Announcement banner */}
@@ -115,7 +118,7 @@ export default function AppShell({ children }) {
               <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
             </svg>
           </button>
-          <img src="/FUYL LINKEDINAUTO LOGO.png" alt="FUYL" style={{ height: 28 }} />
+          <img src={logo} alt="Logo" style={{ height: 28 }} />
         </header>
 
         <div className={styles.content}>

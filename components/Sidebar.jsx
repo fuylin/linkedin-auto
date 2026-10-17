@@ -89,7 +89,7 @@ const navLinks = [
   },
 ];
 
-export default function Sidebar({ isOpen, onToggle }) {
+export default function Sidebar({ isOpen, onToggle, logoUrl }) {
   const pathname = usePathname();
   const [signingOut, setSigningOut] = useState(false);
 
@@ -112,7 +112,7 @@ export default function Sidebar({ isOpen, onToggle }) {
       <aside className={`${styles.sidebar} ${isOpen ? styles.open : ''}`}>
         <div className={styles.brand}>
           <img
-            src="/FUYL LINKEDINAUTO LOGO.png"
+            src={logoUrl || '/FUYL LINKEDINAUTO LOGO.png'}
             alt="FUYL"
             className={styles.logo}
           />
