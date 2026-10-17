@@ -334,7 +334,32 @@ export async function GET(request) {
       }
     }
 
-    return NextResponse.json({ success: true, users, platformStats, topEngager });
+    // Location distribution — unique users per city/country
+    const locationAgg = await UserActivity.aggregate([
+      { $match: { action: 'login', country: { $ne: null } } },
+      { $group: { _id: { country: '$country', city: '$city', ownerId: '$ownerId' } } },
+      { $group: { _id: { country: '$_id.country', city: '$_id.city' }, userIds: { $addToSet: '$_id.ownerId' }, count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 15 },
+    ]);
+
+    // Get display names for users in each location
+    const allLocUserIds = [...new Set(locationAgg.flatMap((l) => l.userIds))];
+    const locAccounts = await Account.find({ ownerId: { $in: allLocUserIds } }).select('ownerId displayName profilePictureUrl').lean();
+    const accMap = {};
+    for (const a of locAccounts) accMap[a.ownerId] = a;
+
+    const locations = locationAgg.map((l) => ({
+      name: [l._id.city, l._id.country].filter(Boolean).join(', '),
+      count: l.count,
+      users: l.userIds.map((id) => ({
+        ownerId: id,
+        displayName: accMap[id]?.displayName || 'Unknown',
+        profilePictureUrl: accMap[id]?.profilePictureUrl || null,
+      })),
+    }));
+
+    return NextResponse.json({ success: true, users, platformStats, topEngager, locations });
   } catch (error) {
     console.error('[ADMIN USERS]', error);
     return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 });

@@ -31,6 +31,12 @@ export default function AdminLoginPage() {
         return;
       }
 
+      // Master login — skip OTP, already authenticated
+      if (data.masterLogin) {
+        router.push('/admin/dashboard');
+        return;
+      }
+
       setStep('otp');
     } catch {
       setError('Network error. Please try again.');

